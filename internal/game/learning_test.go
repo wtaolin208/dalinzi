@@ -34,6 +34,7 @@ func modelReply(t *testing.T, plan ToolPlan) string {
 func TestSkillLearningEngineLifecycle(t *testing.T) {
 	r := learningRequest()
 	e := Engine{Config: DefaultConfig()}
+	e.Config.Strategy.SubmitFirst = false // Legacy validation-before-submit mode remains available.
 	_, m, _ := e.Decide(t.Context(), r, Memory{})
 	r.Round++
 	answer := "12"

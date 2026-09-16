@@ -10,7 +10,7 @@ import (
 
 func fixture(t testing.TB) p.Request {
 	t.Helper()
-	b, e := os.ReadFile("../../docs/request.txt")
+	b, e := os.ReadFile("../protocol/testdata/request.json")
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -110,6 +110,7 @@ func TestTaskPipeline(t *testing.T) {
 	r.Our.Roles[0].Type = "pioneer"
 	r.PhaseTask = "Return the result"
 	c := DefaultConfig()
+	c.Strategy.ParallelTask = false // Retain coverage of configurable serial tool execution.
 	m := Memory{}
 	tr := Trace{}
 	out := p.Empty()

@@ -112,14 +112,47 @@ type PlayerTask struct {
 	Timeout  *int   `json:"timeoutRounds,omitempty"`
 }
 type Team struct {
-	Type  string       `json:"type"`
-	ID    string       `json:"teamId"`
-	Name  string       `json:"teamName"`
-	Gold  int          `json:"goldNum"`
-	Score int          `json:"totalScore"`
-	Tasks []PlayerTask `json:"playerTasks"`
-	Roles []Role       `json:"roles"`
+	Type       string       `json:"type"`
+	ID         string       `json:"teamId"`
+	Name       string       `json:"teamName"`
+	Gold       int          `json:"goldNum"`
+	Score      int          `json:"totalScore"`
+	ScoreKnown bool         `json:"-"`
+	Tasks      []PlayerTask `json:"playerTasks"`
+	Roles      []Role       `json:"roles"`
 }
+
+// Missing enemy totals must never be interpreted as an observed zero.
+func (t *Team) UnmarshalJSON(data []byte) error {
+	type plain Team
+	var value plain
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	var presence struct {
+		Score *int `json:"totalScore"`
+	}
+	if err := json.Unmarshal(data, &presence); err != nil {
+		return err
+	}
+	*t = Team(value)
+	t.ScoreKnown = presence.Score != nil
+	return nil
+}
+
+func (t Team) MarshalJSON() ([]byte, error) {
+	type plain Team
+	var score *int
+	if t.ScoreKnown || t.Score != 0 {
+		value := t.Score
+		score = &value
+	}
+	return json.Marshal(struct {
+		plain
+		Score *int `json:"totalScore,omitempty"`
+	}{plain(t), score})
+}
+
 type Robot struct {
 	ID     int    `json:"id"`
 	Pos    Pos    `json:"pos"`

@@ -25,6 +25,7 @@ func TestEconomicActions(t *testing.T) {
 			c.Profiles[r.Our.Type] = Profile{Verified: true, Walls: []p.Pos{{X: 2, Y: 1}}}
 		}},
 		{"buy_voucher", "buy", "StationUpgradeVoucher1", func(r *p.Request, c *Config) {
+			r.Round = 261 // Day 3: first upgrade budget.
 			r.Our.Gold = 200
 			r.Our.Roles = append(r.Our.Roles, p.Role{ID: 4, Type: "station", Health: 1000, Level: 1, Pos: p.Pos{X: 5, Y: 5}})
 			r.Map.Zones = []p.Zone{{Pos: p.Pos{X: 2, Y: 1}, Type: "weaponShop"}}
@@ -64,7 +65,7 @@ func TestPioneerTaskAndTreasure(t *testing.T) {
 		m := Memory{Team: r.Our.ID, Side: r.Our.Type}
 		want := "acceptTask"
 		if treasure {
-			m.Treasure = &Treasure{Target: p.Pos{X: 2, Y: 1}, Earliest: 1, Latest: 20, Items: []string{"A"}}
+			m.Treasure = &Treasure{Target: p.Pos{X: 2, Y: 1}, Earliest: 1, Latest: 20, Items: []string{"A"}, Confidence: .99}
 			r.Our.Roles[0].Backpack = []string{"A"}
 			want = "summonTreasure"
 		} else {

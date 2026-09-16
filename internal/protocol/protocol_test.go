@@ -6,7 +6,7 @@ import (
 )
 
 func TestProvidedRequest(t *testing.T) {
-	b, e := os.ReadFile("../../docs/request.txt")
+	b, e := os.ReadFile("testdata/request.json")
 	if e != nil {
 		t.Fatal(e)
 	}

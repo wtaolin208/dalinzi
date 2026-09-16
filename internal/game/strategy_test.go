@@ -53,8 +53,8 @@ func TestTaskCooldownAndGoldAreNotRawPoints(t *testing.T) {
 	one := assessTask(r, g, c, Memory{}, site, 1, r.Our.Roles[0].Pos)
 	r.Our.Tasks = []p.PlayerTask{site, {Pos: p.Pos{X: 5, Y: 5}, Cooldown: 10}}
 	two := assessTask(r, g, c, Memory{}, site, 1, r.Our.Roles[0].Pos)
-	if two.CooldownWait >= one.CooldownWait || two.Value <= one.Value {
-		t.Fatal("alternating point ignored", one, two)
+	if two.CooldownWait >= one.CooldownWait || two.Value != one.Value {
+		t.Fatal("cooldown forecast must not dilute current task density", one, two)
 	}
 	r.Our.Gold = 0
 	poor := assessTask(r, g, c, Memory{}, site, 1, r.Our.Roles[0].Pos)
@@ -123,8 +123,8 @@ func TestDawnPrefersKillsOverUnfinishedDamage(t *testing.T) {
 	r.Our.Roles = nil
 	r.Robots.Roles = []p.Robot{{ID: 1, Type: "smallRobot", Health: 10}, {ID: 2, Type: "largeRobot", Health: 500}}
 	r.Round = 100
-	if damageValue(r, []int{0, 40}) <= damageValue(r, []int{10, 0}) {
-		t.Fatal("fixture does not distinguish damage and kill")
+	if damageValue(r, []int{0, 40}) <= 0 || damageValue(r, []int{0, 40}) >= damageValue(r, []int{10, 0}) {
+		t.Fatal("safe fire must prefer efficient kills while preserving future damage value")
 	}
 	r.Round = 130
 	if damageValue(r, []int{0, 40}) != 0 || damageValue(r, []int{10, 0}) <= 0 {

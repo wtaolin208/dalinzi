@@ -111,6 +111,35 @@ func returnDistance(r p.Request, g nav.Grid, pos p.Pos) int {
 	return len(path) - 1
 }
 
+func roleReturnDistance(r p.Request, g nav.Grid, c Config, u p.Role, pos p.Pos) int {
+	if c.Strategy.FixedStations {
+		kind := "rocket"
+		worker := 0
+		for _, role := range r.Mobiles() {
+			if role.Type == "worker" {
+				if role.ID == u.ID {
+					kind = "gatling"
+					if worker > 0 {
+						kind = "railgun"
+					}
+					break
+				}
+				worker++
+			}
+		}
+		for _, w := range r.Weapons() {
+			if w.Type == kind {
+				path := g.Shortest(g.ID(pos), g.Around(w.Cells()))
+				if len(path) == 0 {
+					return 10000
+				}
+				return len(path) - 1
+			}
+		}
+	}
+	return returnDistance(r, g, pos)
+}
+
 func assessTask(r p.Request, g nav.Grid, c Config, m Memory, site p.PlayerTask, travel int, arrival p.Pos) TaskAssessment {
 	d, prob := taskEstimate(m, site.Pos)
 	timeout := 0
@@ -118,6 +147,12 @@ func assessTask(r p.Request, g nav.Grid, c Config, m Memory, site p.PlayerTask, 
 		timeout = *site.Timeout
 	}
 	back := returnDistance(r, g, arrival)
+	for _, u := range r.Mobiles() {
+		if u.Type == "pioneer" {
+			back = roleReturnDistance(r, g, c, u, arrival)
+			break
+		}
+	}
 	a := TaskAssessment{Position: site.Pos, SolveRounds: d, Success: prob, ReturnRounds: back, CooldownWait: 30}
 	// Another available (or soon available) point can absorb this point's cooldown.
 	for _, other := range r.Our.Tasks {
@@ -139,15 +174,15 @@ func assessTask(r p.Request, g nav.Grid, c Config, m Memory, site p.PlayerTask, 
 	if r.Our.Gold < c.ReserveGold {
 		goldWeight = .5
 	}
-	a.Value = (a.ExpectedScore + goldWeight*float64(site.Gold)*(prob+(1-prob)*.25)) / (float64(travel+1+a.CooldownWait) + d)
-	a.Safe = r.Daylight() && !baseEmergency(r) && travel+1+int(math.Ceil(d))+back+c.ReturnBuffer < r.DayLeft() && travel+1+int(math.Ceil(d)) < 1301-r.Round && (timeout <= 0 || d < float64(timeout))
+	a.Value = (a.ExpectedScore + goldWeight*float64(site.Gold)*(prob+(1-prob)*.25)) / (float64(travel+1+back) + d)
+	a.Safe = a.Value >= c.Strategy.TaskMinExpectedDensity && (r.Day() < 6 || d <= float64(c.Strategy.LateTaskMaxRounds)) && r.Daylight() && !baseEmergency(r, c) && travel+1+int(math.Ceil(d))+back+c.ReturnBuffer+c.Strategy.TaskMinFinishBuffer < r.DayLeft() && travel+1+int(math.Ceil(d)) < 1301-r.Round && (timeout <= 0 || d < float64(timeout))
 	return a
 }
 
 func learningAssessment(r p.Request, c Config, m *Memory, extra int) *LearningAssessment {
 	t := &m.Task
 	a := &LearningAssessment{}
-	if !learningTime(r, t, extra+1) || baseEmergency(r) || !r.Daylight() {
+	if !learningTime(r, t, extra+1) || baseEmergency(r, c) || !r.Daylight() {
 		return a
 	}
 	for _, s := range m.Skills {
@@ -166,25 +201,13 @@ func learningAssessment(r p.Request, c Config, m *Memory, extra int) *LearningAs
 	return a
 }
 
-func baseEmergency(r p.Request) bool {
-	for _, base := range r.Our.Roles {
-		if base.Type != "station" || base.Health <= 0 {
-			continue
-		}
-		damage := 0
-		for _, robot := range r.Robots.Roles {
-			if robot.Health <= 0 || robot.State == "dizzy" {
-				continue
-			}
-			dist := 10000
-			for _, cell := range base.Cells() {
-				dist = min(dist, p.Distance(cell, robot.Pos))
-			}
-			if dist <= 5 {
-				damage += map[string]int{"smallRobot": 5, "middleRobot": 10, "largeRobot": 20, "bossRobot": 40}[robot.Type]
-			}
-		}
-		if damage > 0 && (base.Health <= 400 || damage*3 >= base.Health) {
+func baseEmergency(r p.Request, configs ...Config) bool {
+	c := DefaultConfig()
+	if len(configs) > 0 {
+		c = configs[0]
+	}
+	for _, risk := range assessStructures(r, c) {
+		if risk.Critical {
 			return true
 		}
 	}
@@ -204,7 +227,7 @@ func shouldRetreat(r p.Request, g nav.Grid, c Config, m Memory, emergency bool) 
 		}
 		d, _ := taskEstimate(m, m.Task.Position)
 		remaining := max(1, int(math.Ceil(d))-(r.Round-m.Task.Start))
-		return !r.Daylight() || remaining+returnDistance(r, g, u.Pos)+c.ReturnBuffer >= r.DayLeft()
+		return !r.Daylight() || remaining+roleReturnDistance(r, g, c, u, u.Pos)+c.ReturnBuffer >= r.DayLeft()
 	}
 	return false
 }

@@ -4,7 +4,7 @@
   "followMoves": false,
   "maxExpanded": 12000,
   "maxStates": 60000,
-  "returnBuffer": 6,
+  "returnBuffer": 5,
   "mineBatch": 12,
   "reserveGold": 25,
   "combatCandidates": 12,
@@ -13,5 +13,30 @@
   "enableTasks": true,
   "enableNews": true,
   "enableSandboxCommands": true,
-  "maxToolBytes": 24000
+  "maxToolBytes": 24000,
+  "strategy": {
+    "stoneReserveMin": 8,
+    "stoneReserveMax": 15,
+    "taskMinFinishBuffer": 5,
+    "treasureConfidence": 0.85,
+    "forecastConfidence": 0.9,
+    "forecastPremium": 0.25,
+    "emergencyStationHpRatio": 0.3,
+    "wallRepairHpRatio": 0.35,
+    "riskHorizon": 3,
+    "bombMinDamage": 100,
+    "fireOrder": [
+      "rocket",
+      "railgun",
+      "gatling"
+    ],
+    "submitFirst": true,
+    "parallelTask": true,
+    "fixedStations": true,
+    "enableOffense": false,
+    "offenseGoldReserve": 100,
+    "taskMinExpectedDensity": 0,
+    "lateTaskMaxRounds": 12,
+    "scoreMarginBuffer": 20
+  }
 }

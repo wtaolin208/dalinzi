@@ -38,7 +38,9 @@ try {
             Copy-Item -LiteralPath $_.FullName -Destination $target
         }
     }
-    foreach ($name in @('go.mod','run.sh','README.md')) { Copy-Item -LiteralPath $name -Destination $sourceRoot }
+    Copy-Item -LiteralPath 'internal/protocol/testdata' -Destination (Join-Path $sourceRoot 'internal/protocol/testdata') -Recurse
+    foreach ($name in @('go.mod','main.go','Makefile','run.sh','README.md')) { Copy-Item -LiteralPath $name -Destination $sourceRoot }
+    if (Test-Path -LiteralPath 'go.sum') { Copy-Item -LiteralPath 'go.sum' -Destination $sourceRoot }
     New-Item -ItemType Directory -Path (Join-Path $sourceRoot 'docs'),(Join-Path $sourceRoot 'configs'),(Join-Path $binaryRoot 'configs') | Out-Null
     Copy-Item -LiteralPath 'docs/request.txt' -Destination (Join-Path $sourceRoot 'docs/request.txt')
     Copy-Item -LiteralPath $selectedConfig -Destination (Join-Path $sourceRoot 'configs/default.json')

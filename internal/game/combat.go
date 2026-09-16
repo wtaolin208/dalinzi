@@ -112,10 +112,10 @@ func damageValue(r p.Request, d []int) float64 {
 		if u.Health <= 0 {
 			continue
 		}
-		threat := 1.0
-		if u.Target != "" && u.Target != r.Our.Type {
-			threat = 0.15
+		if !ownThreat(r, u.Target) {
+			continue
 		}
+		threat := 1.0
 		for _, a := range r.Our.Roles {
 			if a.Health > 0 && (a.Type == "station" || a.Mobile()) {
 				dist := p.Distance(a.Pos, u.Pos)
@@ -131,9 +131,22 @@ func damageValue(r p.Request, d []int) float64 {
 			left := 130 - (r.Round-1)%130
 			weight = min(1, float64(left-1)/5)
 		}
-		v += float64(min(u.Health, d[i])) * threat * weight
+		points := map[string]int{"smallRobot": 1, "middleRobot": 2, "largeRobot": 4, "bossRobot": 10}[u.Type]
+		// Planning value only: partial damage earns no actual score.
+		v += float64(points) * 12 * float64(min(u.Health, d[i])) / float64(u.Health) * threat * weight
+		for _, a := range r.Our.Roles {
+			if a.Health <= 0 || a.Mobile() {
+				continue
+			}
+			dist := 10000
+			for _, cell := range a.Cells() {
+				dist = min(dist, p.Distance(cell, u.Pos))
+			}
+			if dist <= 4 && a.Health <= robotPower(u.Type)*3 {
+				v += float64(min(u.Health, d[i])) * 1000
+			}
+		}
 		if d[i] >= u.Health {
-			points := map[string]int{"smallRobot": 1, "middleRobot": 2, "largeRobot": 4, "bossRobot": 10}[u.Type]
 			v += float64(points) * 12 * threat
 		}
 	}
@@ -215,12 +228,20 @@ func candidates(r p.Request, w p.Role, c Config) []Shot {
 	return beam
 }
 func fight(r p.Request, pairs []Pair, c Config, m Memory, out *p.Response, tr *Trace) {
+	pairs = append([]Pair(nil), pairs...)
+	order := map[string]int{}
+	for i, k := range c.Strategy.FireOrder {
+		order[k] = i
+	}
+	sort.SliceStable(pairs, func(i, j int) bool { return order[pairs[i].Weapon.Type] < order[pairs[j].Weapon.Type] })
 	type option struct {
 		commands map[string]p.Command
 		damage   []int
 		value    float64
 	}
-	beam := []option{{map[string]p.Command{}, make([]int, len(r.Robots.Roles)), 0}}
+	initial := make([]int, len(r.Robots.Roles))
+	copy(initial, tr.ItemDamage)
+	beam := []option{{map[string]p.Command{}, initial, damageValue(r, initial)}}
 	for _, pair := range pairs {
 		w, u := pair.Weapon, pair.Role
 		if p.Distance(w.Pos, u.Pos) > 1 {

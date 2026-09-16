@@ -5,7 +5,12 @@ if [ "$#" -ne 1 ]; then
   echo 'usage: bash run.sh port' >&2
   exit 2
 fi
-if [ -n "${AGENT_CONFIG:-}" ]; then
-  exec ./agent -debug="${AGENT_DEBUG:-true}" -config "$AGENT_CONFIG" "$1"
+binary=./main
+if [ ! -x "$binary" ]; then
+  binary=./agent
 fi
-exec ./agent -debug="${AGENT_DEBUG:-true}" -config configs/default.json "$1"
+if [ ! -x "$binary" ]; then
+  echo 'missing executable: run make (or go build -o main main.go) first' >&2
+  exit 1
+fi
+exec "$binary" -debug="${AGENT_DEBUG:-true}" -config "${AGENT_CONFIG:-configs/default.json}" "$1"

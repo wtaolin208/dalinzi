@@ -225,7 +225,7 @@ func Validate(r p.Request, c Config, input p.Response, tr *Trace) p.Response {
 				reason = "task role/state/point"
 			}
 		case "submitAnswer":
-			if u.Type != "pioneer" || r.PhaseTask == "" || cmd.Answer == nil {
+			if u.Type != "pioneer" || r.PhaseTask == "" || cmd.Answer == nil || strings.TrimSpace(*cmd.Answer) == "" {
 				reason = "answer missing or no active task"
 			}
 		case "summonTreasure":
@@ -266,7 +266,9 @@ func Validate(r p.Request, c Config, input p.Response, tr *Trace) p.Response {
 					reason = "area item target required"
 				}
 			case "SmallRobotSummonOrder", "MiddleRobotSummonOrder", "LargeRobotSummonOrder", "BossRobotSummonOrder":
-				reason = "summon orders disabled until daily quota and timing calibrated"
+				if !c.Strategy.EnableOffense || !r.Daylight() {
+					reason = "summon orders disabled or outside daytime"
+				}
 			default:
 				found := false
 				if one {

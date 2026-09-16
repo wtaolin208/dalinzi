@@ -1,8 +1,31 @@
 # 《未来战争》Go 参赛程序
 
+## 作战策略实现
+
+当前决策按 [作战策略](docs/作战策略.md) 组织；模块职责、扩展接口、参数与待实测边界见 [实现对照](docs/作战策略实现对照.md)。全局风险与返航计划先于角色分工，应急物品先于炮控，经济候选统一参与资源和路径联合分配。策略参数位于 `configs/default.json` 的 `strategy` 段。
+
 这是按 [程序设计说明书](程序设计说明书.md) 实现的可运行决策服务与离线复现工具。只依赖 Go 标准库，当前在 Go 1.24.1 上开发。不是官方游戏引擎，也没有连接尚未提供地址与接口的平台。
 
-## 运行
+## 比赛平台源码提交
+
+在项目根目录执行 `python pack.py`，生成 `CoreGeek.tar.gz`。解压后的编译目录为 `CoreGeek/src/`，含根入口 `main.go`、`go.mod`、`run.sh`、`Makefile` 以及 `cmd/`、`configs/`、`internal/`、`scripts/`。当前只依赖 Go 标准库，没有 `go.sum`；将来生成该文件后会自动纳入包。
+
+参照 Demo 的直接入口方式，Go 程序直接接收第一个位置参数作为端口，不依赖 `run.sh`。在 `CoreGeek/src/` 下等价的编译与启动示例为（最终编译命令和二进制名称以平台为准）：
+
+```sh
+GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o main main.go
+./main 18080
+```
+
+根入口与 `cmd/agent` 共用 `internal/agentapp`，避免两份服务逻辑分叉。程序自动读取可执行文件旁的 `configs/default.json`，不存在时从当前目录查找；可通过 `AGENT_CONFIG` 或 `-config` 指定配置。`AGENT_DEBUG=false` 可关闭调试日志，无需经过 shell 脚本。`Makefile`、`run.sh` 仅为本地编译启动辅助及旧发布物兼容入口，不是平台启动前提。
+
+打包只修改包内 `go.mod` 的版本为 `1.24.7`，不修改本地 `go 1.24.0`。版本替换后重新计算 TAR 条目长度，并将 shell 脚本转换为 LF、赋予可执行权限。`*.md`、隐藏目录、文档、日志和旧构建产物不纳入提交；单测样例位于 `internal/protocol/testdata/`，解包后可运行 `go test ./...`。新增运行时资源应放入白名单目录，或同步调整 `pack.py` 白名单。
+
+提交前检查 `tar -tzf CoreGeek.tar.gz`，并在解包目录重新构建、测试。平台源码提交使用此 TAR.GZ；下文 `scripts/package.ps1` 的 ZIP 继续用于本地版本冻结和已有迭代工具。生成源码包不表示地图配置已核验，正式参赛仍须完成下文配置检查。
+
+`python scripts/verify_submission.py CoreGeek.tar.gz` 检查解包后的测试、构建以及直接启动时的 HTTP 端口与请求处理。如果只使用本机已有 Go，可加 `--local-go`，仅修改临时解包副本的 Go 版本，原压缩包和本地工程保持不变；该结果不代表 Go 1.24.7 平台环境验证通过。
+
+## 本地运行
 
 本机原有环境设置了 `GO111MODULE=off`，本项目需要模块模式。仅为当前终端设置，不必修改系统全局配置：
 

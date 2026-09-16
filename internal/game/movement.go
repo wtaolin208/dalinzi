@@ -48,6 +48,9 @@ func assessMovement(r p.Request, g nav.Grid, start nav.State, goals [][]int, rol
 		return
 	}
 	risk := movementRisk(r, g)
+	for id := range risk {
+		risk[id] += m.CollisionHeat[siteKey(g.Pos(id))]
+	}
 	baseline := start
 	dist := make([][]int, len(roles))
 	moves := make([][]int, len(roles))

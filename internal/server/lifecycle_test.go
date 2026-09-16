@@ -23,7 +23,11 @@ func TestTwoHalfSnapshotLifecycle(t *testing.T) {
 			if err := json.Unmarshal(send(h, b), &out); err != nil {
 				t.Fatal(err)
 			}
-			if h.memory.Round != round || h.memory.Side != side || out.Commands["1"].Action != "collect" {
+			want := ""
+			if r.Daylight() {
+				want = "collect"
+			}
+			if h.memory.Round != round || h.memory.Side != side || out.Commands["1"].Action != want {
 				t.Fatalf("side %s round %d: %+v", side, round, out)
 			}
 		}

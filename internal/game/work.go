@@ -66,8 +66,12 @@ func sameGoals(a, b []int) bool {
 	return true
 }
 
-func workerOptions(ctx context.Context, r p.Request, u p.Role, g nav.Grid, c Config, gold int, previous string) []workOption {
+func workerOptions(ctx context.Context, r p.Request, u p.Role, g nav.Grid, c Config, gold int, previous string, memories ...Memory) []workOption {
 	var choices []workOption
+	m := Memory{}
+	if len(memories) > 0 {
+		m = memories[0]
+	}
 	add := func(cmd p.Command, cells []p.Pos, value float64, cost, towers int, exclusive string) {
 		if ctx.Err() != nil {
 			return
@@ -93,7 +97,7 @@ func workerOptions(ctx context.Context, r p.Request, u p.Role, g nav.Grid, c Con
 			return
 		}
 		d := len(path) - 1
-		if len(defenseCells(r)) > 0 && (!r.Daylight() || d+1+returnDistance(r, g, g.Pos(path[len(path)-1]))+c.ReturnBuffer >= r.DayLeft()) {
+		if len(defenseCells(r)) > 0 && (!r.Daylight() || d+1+roleReturnDistance(r, g, c, u, g.Pos(path[len(path)-1]))+c.ReturnBuffer >= r.DayLeft()) {
 			return
 		}
 		key := fmt.Sprintf("%s:%s:%v:%s", cmd.Action, cmd.Name, cells, exclusive)
@@ -102,13 +106,14 @@ func workerOptions(ctx context.Context, r p.Request, u p.Role, g nav.Grid, c Con
 		}
 		choices = append(choices, workOption{key: key, command: cmd, goals: gs, distance: d, gold: cost, towers: towers, value: value, exclusive: exclusive})
 	}
+	day := planDay(r, c)
 	f := profile(r, c)
 	if u.Health < 100 && u.Count("Medicine") > 0 {
 		key := "use:Medicine:self"
 		choices = append(choices, workOption{key: key, command: p.Command{Action: "use", Name: "Medicine"}, goals: []int{g.ID(u.Pos)}, value: 1000})
 	}
 	for _, target := range r.Our.Roles {
-		if target.Type == "wall" && target.Health > 0 && target.Health < 400 && u.Count("WallFixer") > 0 {
+		if target.Type == "wall" && target.Health > 0 && float64(target.Health) < float64(maxStructureHP(target))*c.Strategy.WallRepairHpRatio && u.Count("WallFixer") > 0 {
 			cmd := p.At("use", target.Pos)
 			cmd.Name = "WallFixer"
 			add(cmd, []p.Pos{target.Pos}, 80, 0, 0, "repair:"+strconv.Itoa(target.ID))
@@ -124,7 +129,7 @@ func workerOptions(ctx context.Context, r p.Request, u p.Role, g nav.Grid, c Con
 			}
 			cmd := p.At("build", site.Pos)
 			cmd.Name = site.Kind
-			add(cmd, []p.Pos{site.Pos}, 100, 25, 1, "build:"+siteKey(site.Pos))
+			add(cmd, []p.Pos{site.Pos}, 1000000, 25, 1, "build:"+siteKey(site.Pos))
 		}
 	}
 	for _, target := range r.Our.Roles {
@@ -139,23 +144,26 @@ func workerOptions(ctx context.Context, r p.Request, u p.Role, g nav.Grid, c Con
 			prefix = "StationUpgradeVoucher"
 		} else if target.Weapon() {
 			prefix = "WeaponUpgradeVoucher"
+		} else if target.Type == "wall" {
+			prefix = "WallUpgradeVoucher"
 		}
 		if prefix == "" {
 			continue
 		}
+		priority := upgradePriority(r, target, day, c)
 		name := prefix + strconv.Itoa(target.Level)
 		if u.Count(name) > 0 {
 			cmd := p.At("use", target.Pos)
 			cmd.Name = name
-			add(cmd, target.Cells(), 80, 0, 0, "upgrade:"+strconv.Itoa(target.ID))
+			add(cmd, target.Cells(), priority, 0, 0, "upgrade:"+strconv.Itoa(target.ID))
 		}
 		for _, item := range r.Shop {
-			if item.Name == name && item.Price > 0 && u.Count(name) == 0 && !u.Full() && gold-item.Price >= c.ReserveGold {
-				add(p.Command{Action: "buy", Name: name, Num: 1}, zones(r, "weaponShop"), 55, item.Price, 0, "upgrade:"+strconv.Itoa(target.ID))
+			if item.Name == name && item.Price > 0 && u.Count(name) == 0 && !u.Full() && gold-item.Price >= constructionReserve(r, c) && priority > 0 {
+				add(p.Command{Action: "buy", Name: name, Num: 1}, zones(r, "weaponShop"), priority*.7, item.Price, 0, "upgrade:"+strconv.Itoa(target.ID))
 			}
 		}
 	}
-	if u.Count("stone") > 0 {
+	if u.Count("stone") > 0 && !day.FreezeStructures {
 		for _, q := range f.Walls {
 			if ctx.Err() != nil {
 				break
@@ -163,45 +171,17 @@ func workerOptions(ctx context.Context, r p.Request, u p.Role, g nav.Grid, c Con
 			if g.Free(q) && q != u.Pos && buildConnected(r, g, q) {
 				cmd := p.At("build", q)
 				cmd.Name = "wall"
-				add(cmd, []p.Pos{q}, 40, 0, 0, "build:"+siteKey(q))
-			}
-		}
-	}
-	for _, kind := range []string{"copper", "iron", "stone"} {
-		n := u.Count(kind)
-		if kind == "stone" && len(f.Walls) > 0 {
-			n = max(0, n-2)
-		}
-		if n > 0 && (n >= c.MineBatch || u.Full() || near(u.Pos, zones(r, "vendor"))) {
-			price := 1
-			for _, item := range r.Vendor {
-				if item.Name == kind {
-					price = item.Price
+				if value, safe := wallPlanValue(r, g, m, q); safe {
+					add(cmd, []p.Pos{q}, value, 0, 0, "build:"+siteKey(q))
 				}
 			}
-			add(p.Command{Action: "sell", Name: kind, Num: n}, zones(r, "vendor"), float64(30+n*price), 0, 0, "")
 		}
 	}
-	if !u.Full() {
-		for _, z := range r.Map.Zones {
-			if ctx.Err() != nil {
-				break
-			}
-			if z.Type != "stone" && z.Type != "iron" && z.Type != "copper" {
-				continue
-			}
-			price := 1
-			for _, item := range r.Vendor {
-				if item.Name == z.Type {
-					price = item.Price
-				}
-			}
-			if z.Type == "stone" && len(f.Walls) > 0 && u.Count("stone") < 3 {
-				price += 5
-			}
-			add(p.At("collect", z.Pos), []p.Pos{z.Pos}, float64(10*price), 0, 0, "")
-		}
+
+	for _, module := range economicModules() {
+		module(workContext{ctx, r, u, g, c, m, gold}, add)
 	}
+
 	sort.SliceStable(choices, func(i, j int) bool {
 		return choices[i].value/float64(choices[i].distance+1) > choices[j].value/float64(choices[j].distance+1)
 	})
@@ -220,7 +200,7 @@ func workerOptions(ctx context.Context, r p.Request, u p.Role, g nav.Grid, c Con
 
 func assignWorkers(ctx context.Context, r p.Request, g nav.Grid, c Config, m *Memory, out *p.Response, goals map[int][]int, gold *int, tr *Trace) {
 	roles := r.Mobiles()
-	if len(roles) > 3 || baseEmergency(r) {
+	if len(roles) > 3 || baseEmergency(r, c) {
 		return
 	}
 	var workers []int
@@ -236,7 +216,7 @@ func assignWorkers(ctx context.Context, r p.Request, g nav.Grid, c Config, m *Me
 			continue
 		}
 		workers = append(workers, i)
-		options = append(options, workerOptions(ctx, r, u, g, c, *gold, m.Work[u.ID]))
+		options = append(options, workerOptions(ctx, r, u, g, c, *gold, m.Work[u.ID], *m))
 	}
 	if len(workers) == 0 {
 		return
@@ -386,7 +366,7 @@ func assignWorkers(ctx context.Context, r p.Request, g nav.Grid, c Config, m *Me
 				continue
 			}
 			at := grid.Pos(res.Path[len(res.Path)-1][wi])
-			if len(defenseCells(r)) > 0 && res.Cost+1+returnDistance(r, grid, at)+c.ReturnBuffer >= r.DayLeft() {
+			if len(defenseCells(r)) > 0 && res.Cost+1+roleReturnDistance(r, grid, c, roles[wi], at)+c.ReturnBuffer >= r.DayLeft() {
 				safe = false
 			}
 		}

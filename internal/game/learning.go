@@ -46,12 +46,13 @@ type LearnedSkill struct {
 
 // Receipt survives clearing TaskMemory, but never a team/half reset.
 type SkillReceipt struct {
-	Round     int            `json:"round"`
-	Role      string         `json:"role"`
-	Task      string         `json:"task"`
-	Candidate *SkillProposal `json:"candidate,omitempty"`
-	Used      string         `json:"used,omitempty"`
-	Position  p.Pos          `json:"position"`
+	ValidationAnswer *string        `json:"validationAnswer,omitempty"`
+	Round            int            `json:"round"`
+	Role             string         `json:"role"`
+	Task             string         `json:"task"`
+	Candidate        *SkillProposal `json:"candidate,omitempty"`
+	Used             string         `json:"used,omitempty"`
+	Position         p.Pos          `json:"position"`
 }
 
 func learningTime(r p.Request, t *TaskMemory, rounds int) bool {
@@ -140,6 +141,13 @@ func settleSkill(r p.Request, m *Memory, tr *Trace) {
 		return
 	}
 	m.SkillReceipt = nil
+	if x.ValidationAnswer != nil {
+		answer, ok := recipeAnswer(r.CmdResult)
+		if !ok || answer != *x.ValidationAnswer {
+			tr.Notes = append(tr.Notes, "parallel skill validation failed; no promotion")
+			return
+		}
+	}
 	if r.Round != x.Round+1 {
 		tr.Notes = append(tr.Notes, "skill feedback missing; no promotion")
 		return

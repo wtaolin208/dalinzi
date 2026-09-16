@@ -19,6 +19,7 @@ type Profile struct {
 	Walls    []p.Pos `json:"walls"`
 }
 type Config struct {
+	Strategy               StrategyConfig     `json:"strategy"`
 	Recipes                []Recipe           `json:"recipes,omitempty"`
 	Profiles               map[string]Profile `json:"profiles"`
 	ExperimentalDemoLayout bool               `json:"experimentalDemoLayout"`
@@ -38,7 +39,7 @@ type Config struct {
 }
 
 func DefaultConfig() Config {
-	return Config{Profiles: map[string]Profile{}, MaxExpanded: 12000, MaxStates: 60000, ReturnBuffer: 6, MineBatch: 12, ReserveGold: 25, CombatCandidates: 12, CombatBeam: 48, EnableTasks: true, EnableNews: true, EnableSandboxCommands: true, MaxToolBytes: 24000}
+	return Config{Strategy: defaultStrategy(), Profiles: map[string]Profile{}, MaxExpanded: 12000, MaxStates: 60000, ReturnBuffer: 5, MineBatch: 12, ReserveGold: 25, CombatCandidates: 12, CombatBeam: 48, EnableTasks: true, EnableNews: true, EnableSandboxCommands: true, MaxToolBytes: 24000}
 }
 func LoadConfig(path string) (Config, error) {
 	c := DefaultConfig()
@@ -54,6 +55,9 @@ func LoadConfig(path string) (Config, error) {
 	return c, c.Validate()
 }
 func (c Config) Validate() error {
+	if err := c.Strategy.Validate(); err != nil {
+		return err
+	}
 	for _, recipe := range c.Recipes {
 		if recipe.Name == "" || recipe.Pattern == "" || recipe.Python == "" {
 			return fmt.Errorf("empty task recipe")
