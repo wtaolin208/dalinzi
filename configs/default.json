@@ -1,0 +1,17 @@
+{
+  "profiles": {},
+  "experimentalDemoLayout": false,
+  "followMoves": false,
+  "maxExpanded": 12000,
+  "maxStates": 60000,
+  "returnBuffer": 6,
+  "mineBatch": 12,
+  "reserveGold": 25,
+  "combatCandidates": 12,
+  "combatBeam": 48,
+  "allowDuplicateShots": false,
+  "enableTasks": true,
+  "enableNews": true,
+  "enableSandboxCommands": true,
+  "maxToolBytes": 24000
+}

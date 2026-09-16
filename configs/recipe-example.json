@@ -1,0 +1,9 @@
+{
+  "recipes": [
+    {
+      "name": "integer-addition-v1",
+      "pattern": "^计算整数 (?P<a>-?[0-9]+) 与 (?P<b>-?[0-9]+) 的和。$",
+      "python": "import json,sys\np=json.loads(sys.argv[1])\nprint(json.dumps({'answer': str(int(p['a'])+int(p['b']))}))"
+    }
+  ]
+}
