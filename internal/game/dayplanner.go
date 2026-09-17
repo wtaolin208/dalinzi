@@ -96,7 +96,7 @@ func upgradePriority(r p.Request, u p.Role, day DayPlan, c Config) float64 {
 		if u.Type == "station" {
 			return 500
 		}
-		return 300
+		return 300 + upgradeOutput(r, u, c)
 	}
 	// Avoid spending the first upgrade budget on surplus levels or buying
 	// healing vouchers for only a scratch. Injury is an explicit exception.

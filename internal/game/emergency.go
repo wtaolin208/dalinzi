@@ -7,9 +7,6 @@ import (
 
 // Reserve lifesaving role actions before selecting weapon controllers.
 func emergencyItems(r p.Request, c Config, plan BattlePlan, pairs []Pair, out *p.Response, tr *Trace) {
-	if !plan.Emergency && r.Day() != 10 {
-		return
-	}
 	critical := map[int]bool{}
 	for _, x := range plan.Risks {
 		critical[x.ID] = x.Critical
@@ -28,7 +25,7 @@ func emergencyItems(r p.Request, c Config, plan BattlePlan, pairs []Pair, out *p
 		var chosen p.Command
 		value := 0.0
 		for _, pair := range pairs {
-			if pair.Role.ID == u.ID && p.Distance(pair.Weapon.Pos, u.Pos) <= 1 {
+			if pair.Role.ID == u.ID && weaponReady(r, pair.Weapon) && p.Distance(pair.Weapon.Pos, u.Pos) <= 1 {
 				for _, s := range candidates(r, pair.Weapon, c) {
 					value = max(value, s.Value)
 				}
@@ -57,7 +54,7 @@ func emergencyItems(r p.Request, c Config, plan BattlePlan, pairs []Pair, out *p
 				value = 2e6
 			}
 		}
-		if plan.Emergency || r.Day() == 10 {
+		if value == 0 || plan.Emergency || r.Day() == 10 {
 			for _, bot := range r.Robots.Roles {
 				if bot.Health <= 0 || !ownThreat(r, bot.Target) {
 					continue
@@ -76,7 +73,7 @@ func emergencyItems(r p.Request, c Config, plan BattlePlan, pairs []Pair, out *p
 								damage += min(100, max(0, b.Health-d[i]))
 								d[i] += 100
 								if b.State != "dizzy" && !stunned[b.ID] {
-									delay += robotPower(b.Type) * 5
+									delay += robotPower(b.Type) * min(c.Strategy.RiskHorizon, 130-(r.Round-1)%130)
 								}
 							}
 						}
@@ -86,7 +83,7 @@ func emergencyItems(r p.Request, c Config, plan BattlePlan, pairs []Pair, out *p
 							chosen.Name = "Bomb"
 							value = benefit
 						}
-						if plan.Emergency && u.Count("DizzyWeapon") > 0 && float64(delay)*10 > value {
+						if (plan.Emergency || value == 0) && delay > 0 && u.Count("DizzyWeapon") > 0 && float64(delay)*10 > value {
 							chosen = p.At("use", q)
 							chosen.Name = "DizzyWeapon"
 							value = float64(delay) * 10

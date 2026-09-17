@@ -16,6 +16,11 @@ func isSummon(name string) bool {
 // Opt-in pressure policy. These gates are conservative heuristics, not a survival proof.
 func offenseTurn(r p.Request, g nav.Grid, c Config, m *Memory, plan BattlePlan, out *p.Response, goals map[int][]int, gold *int) {
 	day := planDay(r, c)
+	// No observed evidence currently establishes positive final-night pressure.
+	// Keep cash rather than treating a thick robot as a guaranteed benefit.
+	if r.Day() == 10 && (m.SummonValue == nil || m.SummonValue.Round != r.Round || !worthwhileSummon(m.SummonValue.Value)) {
+		return
+	}
 	if !day.AllowOffense || (r.Day() == 4 && m.SummonsUsed >= 1) || !c.Strategy.EnableOffense || !r.Daylight() || plan.Emergency || len(plan.ReturnRoles) > 0 || len(r.Weapons()) < 3 || len(r.Mobiles()) < 3 || m.SummonsUsed >= 10 {
 		return
 	}

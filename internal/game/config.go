@@ -19,6 +19,7 @@ type Profile struct {
 	Walls    []p.Pos `json:"walls"`
 }
 type Config struct {
+	ReturnAssignments      map[int]p.Role     `json:"-"`
 	Strategy               StrategyConfig     `json:"strategy"`
 	Recipes                []Recipe           `json:"recipes,omitempty"`
 	Profiles               map[string]Profile `json:"profiles"`

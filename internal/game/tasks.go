@@ -50,6 +50,7 @@ type Treasure struct {
 	Evidence   []int    `json:"evidenceDays"`
 }
 type Memory struct {
+	SummonValue       *SummonAssessment         `json:"summonValue,omitempty"`
 	ActionErrorStreak int                       `json:"actionErrorStreak,omitempty"`
 	NightBaseRisk     map[int]bool              `json:"nightBaseRisk,omitempty"`
 	StrategyState     string                    `json:"strategyState,omitempty"`

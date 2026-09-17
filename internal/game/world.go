@@ -30,7 +30,7 @@ type StrategyConfig struct {
 }
 
 func defaultStrategy() StrategyConfig {
-	return StrategyConfig{LateTaskMaxRounds: 12, ScoreMarginBuffer: 20, FixedStations: true, EnableOffense: false, OffenseGoldReserve: 100, StoneReserveMin: 8, StoneReserveMax: 15, TaskMinFinishBuffer: 5, TreasureConfidence: .85, ForecastConfidence: .9, ForecastPremium: .25, EmergencyStationHpRatio: .30, WallRepairHpRatio: .35, RiskHorizon: 3, BombMinDamage: 100, FireOrder: []string{"rocket", "railgun", "gatling"}, SubmitFirst: true, ParallelTask: true}
+	return StrategyConfig{LateTaskMaxRounds: 12, ScoreMarginBuffer: 20, FixedStations: false, EnableOffense: false, OffenseGoldReserve: 100, StoneReserveMin: 8, StoneReserveMax: 15, TaskMinFinishBuffer: 5, TreasureConfidence: .85, ForecastConfidence: .9, ForecastPremium: .25, EmergencyStationHpRatio: .30, WallRepairHpRatio: .35, RiskHorizon: 3, BombMinDamage: 100, FireOrder: []string{"rocket", "railgun", "gatling"}, SubmitFirst: true, ParallelTask: true}
 }
 func (c StrategyConfig) Validate() error {
 	if c.TaskMinExpectedDensity < 0 || math.IsNaN(c.TaskMinExpectedDensity) || math.IsInf(c.TaskMinExpectedDensity, 0) || c.LateTaskMaxRounds < 1 || c.ScoreMarginBuffer < 0 || c.OffenseGoldReserve < 0 || c.StoneReserveMin < 0 || c.StoneReserveMax < c.StoneReserveMin || c.TaskMinFinishBuffer < 0 || c.RiskHorizon < 1 || c.RiskHorizon > 10 || c.BombMinDamage < 1 {

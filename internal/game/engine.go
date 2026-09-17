@@ -15,6 +15,7 @@ type PathTrace struct {
 	Assignment []int      `json:"assignment,omitempty"`
 }
 type Trace struct {
+	CombatExact     bool                `json:"combatExactWithinCandidates"`
 	DayPlan         *DayPlan            `json:"dayPlan,omitempty"`
 	Score           *ScoreAssessment    `json:"score,omitempty"`
 	Strategy        *BattlePlan         `json:"strategy,omitempty"`
@@ -66,6 +67,10 @@ func (e Engine) Decide(ctx context.Context, r p.Request, before Memory) (p.Respo
 	}
 	pairs, paths := defense(ctx, planning, g, e.Config)
 	tr.Paths = append(tr.Paths, paths...)
+	e.Config.ReturnAssignments = map[int]p.Role{}
+	for _, pair := range pairs {
+		e.Config.ReturnAssignments[pair.Role.ID] = pair.Weapon
+	}
 	plan := assessFSM(ctx, r, g, e.Config, m, pairs)
 	tr.Strategy = &plan
 	if plan.State == StateEnd {

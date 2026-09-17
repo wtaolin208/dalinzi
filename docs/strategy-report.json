@@ -1,0 +1,392 @@
+{
+  "strategy_sha256": "31f184aef5a01a9886aa13bb18e2c641a0f4628f28a351446f807f651a9e0774",
+  "rule_version": "document-31f184aef5a0",
+  "official_judge_version": null,
+  "summary": {
+    "PASS": 11,
+    "FAIL": 0,
+    "BLOCKED": 4,
+    "NOT_RUN": 0
+  },
+  "records": [
+    {
+      "id": "S01",
+      "module": "DayPlanner",
+      "level": "L1/L2",
+      "requirements": [
+        "FIXTURE:defense_safe_with_task",
+        "FIXTURE:extra_wall_marginal_value_zero",
+        "RULE:task_score_formula"
+      ],
+      "expected": {
+        "choice": "assign_pioneer_to_task",
+        "task_scores": [
+          70,
+          50,
+          35
+        ],
+        "speed_gain_3_vs_5": 20
+      },
+      "negative": {
+        "change": "task_causes_required_defense_to_fail",
+        "must_not_force": "assign_pioneer_to_task"
+      },
+      "log": "=== RUN   TestStrategyS01\n    strategy_scenarios_test.go:32: scenario=S01 requirements=[FIXTURE:defense_safe_with_task FIXTURE:extra_wall_marginal_value_zero RULE:task_score_formula] expected=map[choice:assign_pioneer_to_task speed_gain_3_vs_5:20 task_scores:[70 50 35]]\n--- PASS: TestStrategyS01 (0.00s)\n",
+      "status": "PASS",
+      "reason": "Production selector/model adapter and negative case executed; not an L3 result"
+    },
+    {
+      "id": "S02",
+      "module": "TaskScheduler",
+      "level": "L1/L2",
+      "requirements": [
+        "FIXTURE:A_task_finished",
+        "FIXTURE:B_valid",
+        "FIXTURE:return_deadline_satisfied"
+      ],
+      "expected": {
+        "choice": "visit_B_before_waiting_for_A",
+        "route_rounds": 14,
+        "A_cooldown_after_route": 16
+      },
+      "negative": {
+        "change": "A_task_still_active_and_unfinished",
+        "must_not_force": "leave_A"
+      },
+      "log": "=== RUN   TestStrategyS02\n    strategy_scenarios_test.go:58: scenario=S02 requirements=[FIXTURE:A_task_finished FIXTURE:B_valid FIXTURE:return_deadline_satisfied] expected=map[A_cooldown_after_route:16 choice:visit_B_before_waiting_for_A route_rounds:14]\n--- PASS: TestStrategyS02 (0.00s)\n",
+      "status": "PASS",
+      "reason": "Production selector/model adapter and negative case executed; not an L3 result"
+    },
+    {
+      "id": "S03",
+      "module": "TaskEngine",
+      "level": "L1/L2",
+      "requirements": [
+        "FIXTURE:valid_candidate_ready",
+        "FIXTURE:no_emergency_action_needed",
+        "RULE:best_submission_used_at_timeout"
+      ],
+      "expected": {
+        "choice": "submit_now",
+        "full_score_now": 70,
+        "full_score_if_delayed": 50,
+        "delay_loss_on_full_branch": 20
+      },
+      "negative": {
+        "change": "no_syntactically_valid_candidate",
+        "must_not_force": "submit_empty_answer"
+      },
+      "log": "=== RUN   TestStrategyS03\n    strategy_scenarios_test.go:83: scenario=S03 requirements=[FIXTURE:valid_candidate_ready FIXTURE:no_emergency_action_needed RULE:best_submission_used_at_timeout] expected=map[choice:submit_now delay_loss_on_full_branch:20 full_score_if_delayed:50 full_score_now:70]\n--- PASS: TestStrategyS03 (0.00s)\n",
+      "status": "PASS",
+      "reason": "Production selector/model adapter and negative case executed; not an L3 result"
+    },
+    {
+      "id": "S04",
+      "module": "DefensePlanner",
+      "level": "L1/L2",
+      "requirements": [
+        "FIXTURE:independent_clear_rays",
+        "FIXTURE:controllers_ready",
+        "FIXTURE:other_weapons_unavailable"
+      ],
+      "expected": {
+        "assignment": {
+          "gatling": "A",
+          "railgun": "B"
+        },
+        "effective_damage": 40,
+        "kill_score": 4,
+        "greedy_kill_score": 2
+      },
+      "negative": {
+        "change": "B_outside_railgun_range",
+        "must_not_force": "railgun_attack_B"
+      },
+      "log": "=== RUN   TestStrategyS04\n    strategy_scenarios_test.go:128: scenario=S04 requirements=[FIXTURE:independent_clear_rays FIXTURE:controllers_ready FIXTURE:other_weapons_unavailable] expected=map[assignment:map[gatling:A railgun:B] effective_damage:40 greedy_kill_score:2 kill_score:4]\n    strategy_scenarios_test.go:139: selected=map[10:{Action:attack Controller:1 Targets:[{X:4 Y:2}] Name: Num:0 Answer:<nil> Item:[]} 11:{Action:attack Controller:2 Targets:[{X:10 Y:6}] Name: Num:0 Answer:<nil> Item:[]}]\n    strategy_scenarios_test.go:144: selected=map[11:{Action:attack Controller:2 Targets:[{X:4 Y:2}] Name: Num:0 Answer:<nil> Item:[]}]\n--- PASS: TestStrategyS04 (0.00s)\n",
+      "status": "PASS",
+      "reason": "Production selector/model adapter and negative case executed; not an L3 result"
+    },
+    {
+      "id": "S05",
+      "module": "RailgunPlanner",
+      "level": "L1/L2",
+      "requirements": [
+        "RULE:energy_stops_at_endpoint",
+        "FIXTURE:collinear_targets_in_range_and_clear"
+      ],
+      "expected": {
+        "choice": "endpoint_at_or_beyond_third_robot",
+        "damage_by_target": [
+          5,
+          10,
+          15
+        ],
+        "total_damage": 30,
+        "first_endpoint_damage": 5
+      },
+      "negative": {
+        "change": "third_target_out_of_range",
+        "must_not_force": "out_of_range_endpoint"
+      },
+      "log": "=== RUN   TestStrategyS05\n    strategy_scenarios_test.go:154: scenario=S05 requirements=[RULE:energy_stops_at_endpoint FIXTURE:collinear_targets_in_range_and_clear] expected=map[choice:endpoint_at_or_beyond_third_robot damage_by_target:[5 10 15] first_endpoint_damage:5 total_damage:30]\n    strategy_scenarios_test.go:163: selected=map[9:{Action:attack Controller:1 Targets:[{X:7 Y:5}] Name: Num:0 Answer:<nil> Item:[]}]\n    strategy_scenarios_test.go:178: selected=map[9:{Action:attack Controller:1 Targets:[{X:5 Y:5}] Name: Num:0 Answer:<nil> Item:[]}]\n--- PASS: TestStrategyS05 (0.00s)\n",
+      "status": "PASS",
+      "reason": "Production selector/model adapter and negative case executed; not an L3 result"
+    },
+    {
+      "id": "S06",
+      "module": "RocketPlanner",
+      "level": "L1/L2",
+      "requirements": [
+        "RULE:splash_damage_10",
+        "FIXTURE:all_candidate_centers_in_range",
+        "FIXTURE:no_other_targets"
+      ],
+      "expected": {
+        "required_candidate": [
+          11,
+          10
+        ],
+        "canonical_target": [
+          11,
+          10
+        ],
+        "damage_by_target": [
+          10,
+          10
+        ],
+        "kill_score": 4,
+        "robot_center_kill_score": 2
+      },
+      "negative": {
+        "change": "cooldown_positive",
+        "must_not_force": "rocket_attack"
+      },
+      "log": "=== RUN   TestStrategyS06\n    strategy_scenarios_test.go:184: scenario=S06 requirements=[RULE:splash_damage_10 FIXTURE:all_candidate_centers_in_range FIXTURE:no_other_targets] expected=map[canonical_target:[11 10] damage_by_target:[10 10] kill_score:4 required_candidate:[11 10] robot_center_kill_score:2]\n    strategy_scenarios_test.go:191: selected=map[9:{Action:attack Controller:1 Targets:[{X:11 Y:9}] Name: Num:0 Answer:<nil> Item:[]}]\n    strategy_scenarios_test.go:199: selected=map[]\n--- PASS: TestStrategyS06 (0.00s)\n",
+      "status": "PASS",
+      "reason": "Production selector/model adapter and negative case executed; not an L3 result"
+    },
+    {
+      "id": "S07",
+      "module": "RoleActionScheduler",
+      "level": "L1/L2",
+      "requirements": [
+        "FIXTURE:item_use_has_positive_value",
+        "FIXTURE:other_two_shots_needed",
+        "FIXTURE:item_use_legal"
+      ],
+      "expected": {
+        "item_user": "rocket_controller",
+        "preserved_weapon_attacks": 2,
+        "rocket_attacks": 0,
+        "max_actions_per_controller": 1
+      },
+      "negative": {
+        "change": "item_missing_from_rocket_controller_backpack",
+        "must_not_force": "rocket_controller_use_item"
+      },
+      "log": "=== RUN   TestStrategyS07\n    strategy_scenarios_test.go:205: scenario=S07 requirements=[FIXTURE:item_use_has_positive_value FIXTURE:other_two_shots_needed FIXTURE:item_use_legal] expected=map[item_user:rocket_controller max_actions_per_controller:1 preserved_weapon_attacks:2 rocket_attacks:0]\n--- PASS: TestStrategyS07 (0.00s)\n",
+      "status": "PASS",
+      "reason": "Production selector/model adapter and negative case executed; not an L3 result"
+    },
+    {
+      "id": "S08",
+      "module": "EmergencyPlanner",
+      "level": "L1/L2",
+      "requirements": [
+        "VERIFIED:stun_covers_next_four_enemy_action_rounds",
+        "RULE:robots_cleared_next_morning",
+        "FIXTURE:no_other_threats"
+      ],
+      "expected": {
+        "choice": "use_DizzyWeapon",
+        "covered_robots": 3,
+        "uncontrolled_threat_rounds": 0,
+        "kill_score_from_clear": 0
+      },
+      "negative": {
+        "change": "stun_leaves_one_lethal_enemy_action_before_clear",
+        "must_not_force": "assume_stun_alone_safe"
+      },
+      "log": "",
+      "status": "BLOCKED",
+      "reason": "No versioned official experiment evidence: VERIFIED:stun_covers_next_four_enemy_action_rounds"
+    },
+    {
+      "id": "S09",
+      "module": "RepairScheduler",
+      "level": "L1/L2",
+      "requirements": [
+        "VERIFIED:repair_before_next_damage_event",
+        "FIXTURE:incoming_damage_upper_bound_stable",
+        "FIXTURE:repairer_ready"
+      ],
+      "expected": {
+        "hp_before_repair": 170,
+        "healed_hp": 1830,
+        "hp_after_repair_and_next_hit": 1880,
+        "unrepaired_raw_hp_after_six_hits": -70
+      },
+      "negative": {
+        "change": "damage_per_round_increases_to_400",
+        "must_not_force": "wait_four_rounds"
+      },
+      "log": "",
+      "status": "BLOCKED",
+      "reason": "No versioned official experiment evidence: VERIFIED:repair_before_next_damage_event"
+    },
+    {
+      "id": "S10",
+      "module": "UpgradePlanner",
+      "level": "L1/L2",
+      "requirements": [
+        "FIXTURE:equal_cost_and_non_damage_value",
+        "FIXTURE:no_overkill",
+        "VERIFIED:rocket_cycle_four_rounds_for_B"
+      ],
+      "expected": {
+        "A_choice": "upgrade_railgun",
+        "B_choice": "upgrade_rocket",
+        "B_extra_damage_per_shot": 70,
+        "B_extra_damage_per_round": 17.5
+      },
+      "negative": {
+        "change": "remaining_window_has_no_rocket_firing_opportunity",
+        "must_not_force": "upgrade_rocket_for_average_damage"
+      },
+      "log": "",
+      "status": "BLOCKED",
+      "reason": "No versioned official experiment evidence: VERIFIED:rocket_cycle_four_rounds_for_B",
+      "partial_checks": {
+        "A": "pass",
+        "log": "=== RUN   TestStrategyS10A\n    strategy_scenarios_test.go:375: scenario=S10 requirements=[FIXTURE:equal_cost_and_non_damage_value FIXTURE:no_overkill VERIFIED:rocket_cycle_four_rounds_for_B] expected=map[A_choice:upgrade_railgun B_choice:upgrade_rocket B_extra_damage_per_round:17.5 B_extra_damage_per_shot:70]\n--- PASS: TestStrategyS10A (0.00s)\n"
+      }
+    },
+    {
+      "id": "S11",
+      "module": "EconomyEngine",
+      "level": "L1/L2",
+      "requirements": [
+        "FIXTURE:purchase_required_for_safety",
+        "FIXTURE:tomorrow_price_certain",
+        "FIXTURE:route_and_inventory_valid"
+      ],
+      "expected": {
+        "sell_quantity": 2,
+        "iron_remaining": 8,
+        "gold_after_sell": 100,
+        "gold_after_buy": 0,
+        "foregone_appreciation": 10
+      },
+      "negative": {
+        "change": "required_purchase_no_longer_needed_and_holding_has_no_cost",
+        "must_not_force": "sell_two_iron_now"
+      },
+      "log": "=== RUN   TestStrategyS11\n    strategy_scenarios_test.go:240: scenario=S11 requirements=[FIXTURE:purchase_required_for_safety FIXTURE:tomorrow_price_certain FIXTURE:route_and_inventory_valid] expected=map[foregone_appreciation:10 gold_after_buy:0 gold_after_sell:100 iron_remaining:8 sell_quantity:2]\n--- PASS: TestStrategyS11 (0.00s)\n",
+      "status": "PASS",
+      "reason": "Production selector/model adapter and negative case executed; not an L3 result"
+    },
+    {
+      "id": "S12",
+      "module": "EndgamePlanner",
+      "level": "L1/L2",
+      "requirements": [
+        "FIXTURE:all_incoming_damage_bounded",
+        "FIXTURE:roles_and_weapons_safe",
+        "FIXTURE:no_other_score_for_healing"
+      ],
+      "expected": {
+        "station_hp_lower_bound": 360,
+        "A_target": "middleRobot",
+        "A_kill_score": 2,
+        "B_target": "bossRobot",
+        "B_kill_score": 10,
+        "require_heal": false
+      },
+      "negative": {
+        "change": "damage_bound_per_round_becomes_150",
+        "must_not_force": "ignore_station_safety"
+      },
+      "log": "=== RUN   TestStrategyS12\n    strategy_scenarios_test.go:270: scenario=S12 requirements=[FIXTURE:all_incoming_damage_bounded FIXTURE:roles_and_weapons_safe FIXTURE:no_other_score_for_healing] expected=map[A_kill_score:2 A_target:middleRobot B_kill_score:10 B_target:bossRobot require_heal:false station_hp_lower_bound:360]\n--- PASS: TestStrategyS12 (0.00s)\n",
+      "status": "PASS",
+      "reason": "Production selector/model adapter and negative case executed; not an L3 result"
+    },
+    {
+      "id": "S13",
+      "module": "OffensePlanner",
+      "level": "L1/L2",
+      "requirements": [
+        "FIXTURE:summon_certainly_killed_without_other_effect",
+        "FIXTURE:no_positive_combo"
+      ],
+      "expected": {
+        "choice": "do_not_summon",
+        "score_margin_if_summon": -4,
+        "cash_may_remain": true
+      },
+      "negative": {
+        "change": "verified_summon_changes_enemy_base_survival",
+        "must_not_force": "always_reject_summon"
+      },
+      "log": "=== RUN   TestStrategyS13\n    strategy_scenarios_test.go:296: scenario=S13 requirements=[FIXTURE:summon_certainly_killed_without_other_effect FIXTURE:no_positive_combo] expected=map[cash_may_remain:true choice:do_not_summon score_margin_if_summon:-4]\n--- PASS: TestStrategyS13 (0.00s)\n",
+      "status": "PASS",
+      "reason": "Production selector/model adapter and negative case executed; not an L3 result"
+    },
+    {
+      "id": "S14",
+      "module": "RoleAssignmentAndPathfinder",
+      "level": "L1/L2",
+      "requirements": [
+        "FIXTURE:no_inventory_binding",
+        "FIXTURE:short_routes_conflict_free"
+      ],
+      "expected": {
+        "assignment_column_indices": [
+          1,
+          0,
+          2
+        ],
+        "permutations_evaluated": 6,
+        "makespan": 2,
+        "total_distance": 6,
+        "baseline_makespan": 12,
+        "baseline_distance": 26,
+        "vertex_conflicts": 0,
+        "swap_conflicts": 0
+      },
+      "negative": {
+        "change": "chosen_routes_contend_for_same_cell_same_round",
+        "must_not_force": "execute_conflicting_moves"
+      },
+      "log": "=== RUN   TestStrategyS14\n    strategy_scenarios_test.go:312: scenario=S14 requirements=[FIXTURE:no_inventory_binding FIXTURE:short_routes_conflict_free] expected=map[assignment_column_indices:[1 0 2] baseline_distance:26 baseline_makespan:12 makespan:2 permutations_evaluated:6 swap_conflicts:0 total_distance:6 vertex_conflicts:0]\n--- PASS: TestStrategyS14 (0.01s)\n",
+      "status": "PASS",
+      "reason": "Production selector/model adapter and negative case executed; not an L3 result"
+    },
+    {
+      "id": "S15",
+      "module": "StrategyFSM",
+      "level": "L1/L2",
+      "requirements": [
+        "VERIFIED:night_task_actions_work",
+        "FIXTURE:two_guns_safe_for_remaining_night",
+        "FIXTURE:taskpoint_safe",
+        "FIXTURE:third_gun_marginal_value_zero"
+      ],
+      "expected": {
+        "choice": "pioneer_continues_task",
+        "task_score_on_full_branch": 70,
+        "defending_controllers": 2,
+        "pioneer_simultaneous_attack_and_submit": false
+      },
+      "negative": {
+        "change": "third_gun_required_to_prevent_base_destruction",
+        "must_not_force": "continue_task_at_cost_of_base"
+      },
+      "log": "",
+      "status": "BLOCKED",
+      "reason": "No versioned official experiment evidence: VERIFIED:night_task_actions_work"
+    }
+  ],
+  "tool_exit_code": 0,
+  "tool_stderr": "",
+  "limitation": "Finite synthetic fixtures; no official battle, timing evidence or global optimality claim"
+}

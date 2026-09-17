@@ -71,14 +71,33 @@ func economyCandidates(w workContext, add workSink) {
 		if kind == "stone" && len(f.Walls) > 0 {
 			n = max(0, n-stoneReserve(r, c, u))
 		}
-		if n > 0 && (r.Day() == 10 || n >= c.MineBatch || u.Full() || near(u.Pos, zones(r, "vendor"))) && (r.Day() == 10 || marketTrend(r, c, m, kind) <= 0 || u.Full() || gold < c.ReserveGold) {
-			price := 1
-			for _, item := range r.Vendor {
-				if item.Name == kind {
-					price = item.Price
-				}
+		price := 0
+		for _, item := range r.Vendor {
+			if item.Name == kind {
+				price = item.Price
 			}
-			add(p.Command{Action: "sell", Name: kind, Num: n}, zones(r, "vendor"), float64(30+n*price), 0, 0, "")
+		}
+		if n <= 0 || price <= 0 {
+			continue
+		}
+		hold := r.Day() < 9 && marketTrend(r, c, m, kind) > 0 && !u.Full()
+		required := requiredInvestment(r, c)
+		if hold {
+			n = minimumSale(gold, required, price, n)
+			if n == 0 {
+				continue
+			}
+		}
+		if hold || r.Day() == 10 || n >= c.MineBatch || u.Full() || near(u.Pos, zones(r, "vendor")) {
+			value := float64(30 + n*price)
+			if hold {
+				value += 500
+			}
+			exclusive := ""
+			if hold {
+				exclusive = "fund-required-investment"
+			}
+			add(p.Command{Action: "sell", Name: kind, Num: n}, zones(r, "vendor"), value, 0, 0, exclusive)
 		}
 	}
 	if !u.Full() {

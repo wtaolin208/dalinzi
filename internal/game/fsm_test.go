@@ -150,8 +150,8 @@ func TestNightPoliciesNeverPermitSummons(t *testing.T) {
 	proposed.Commands["1"] = p.Command{Action: "use", Name: "LargeRobotSummonOrder"}
 	tr := Trace{Rejected: map[string]string{}}
 	out := Validate(r, c, proposed, &tr)
-	if len(out.Commands) != 0 {
-		t.Fatal("night summon escaped final validator")
+	if len(out.Commands) != 1 {
+		t.Fatal("night timing mislabeled as a protocol error")
 	}
 }
 

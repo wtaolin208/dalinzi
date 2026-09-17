@@ -1,0 +1,490 @@
+[
+  {
+    "id": "S01",
+    "module": "DayPlanner",
+    "requires": [
+      "FIXTURE:defense_safe_with_task",
+      "FIXTURE:extra_wall_marginal_value_zero",
+      "RULE:task_score_formula"
+    ],
+    "input": {
+      "score_reward": 20,
+      "timeout_rounds": 30,
+      "full_completion_elapsed": [
+        3,
+        5,
+        10
+      ],
+      "idle_score_gain": 0
+    },
+    "expected": {
+      "choice": "assign_pioneer_to_task",
+      "task_scores": [
+        70,
+        50,
+        35
+      ],
+      "speed_gain_3_vs_5": 20
+    },
+    "negative": {
+      "change": "task_causes_required_defense_to_fail",
+      "must_not_force": "assign_pioneer_to_task"
+    }
+  },
+  {
+    "id": "S02",
+    "module": "TaskScheduler",
+    "requires": [
+      "FIXTURE:A_task_finished",
+      "FIXTURE:B_valid",
+      "FIXTURE:return_deadline_satisfied"
+    ],
+    "input": {
+      "A_cooldown": 30,
+      "travel_to_B": 5,
+      "accept_actions": 1,
+      "solve_elapsed_after_accept": 3,
+      "travel_back": 5
+    },
+    "expected": {
+      "choice": "visit_B_before_waiting_for_A",
+      "route_rounds": 14,
+      "A_cooldown_after_route": 16
+    },
+    "negative": {
+      "change": "A_task_still_active_and_unfinished",
+      "must_not_force": "leave_A"
+    }
+  },
+  {
+    "id": "S03",
+    "module": "TaskEngine",
+    "requires": [
+      "FIXTURE:valid_candidate_ready",
+      "FIXTURE:no_emergency_action_needed",
+      "RULE:best_submission_used_at_timeout"
+    ],
+    "input": {
+      "score_reward": 20,
+      "timeout_rounds": 30,
+      "submit_elapsed_now": 3,
+      "extra_delay": 2
+    },
+    "expected": {
+      "choice": "submit_now",
+      "full_score_now": 70,
+      "full_score_if_delayed": 50,
+      "delay_loss_on_full_branch": 20
+    },
+    "negative": {
+      "change": "no_syntactically_valid_candidate",
+      "must_not_force": "submit_empty_answer"
+    }
+  },
+  {
+    "id": "S04",
+    "module": "DefensePlanner",
+    "requires": [
+      "FIXTURE:independent_clear_rays",
+      "FIXTURE:controllers_ready",
+      "FIXTURE:other_weapons_unavailable"
+    ],
+    "input": {
+      "gatling_level": 1,
+      "railgun_level": 3,
+      "robots": [
+        {
+          "id": "A",
+          "type": "middleRobot",
+          "hp": 10
+        },
+        {
+          "id": "B",
+          "type": "middleRobot",
+          "hp": 30
+        }
+      ],
+      "reachable": {
+        "gatling": [
+          "A"
+        ],
+        "railgun": [
+          "A",
+          "B"
+        ]
+      }
+    },
+    "expected": {
+      "assignment": {
+        "gatling": "A",
+        "railgun": "B"
+      },
+      "effective_damage": 40,
+      "kill_score": 4,
+      "greedy_kill_score": 2
+    },
+    "negative": {
+      "change": "B_outside_railgun_range",
+      "must_not_force": "railgun_attack_B"
+    }
+  },
+  {
+    "id": "S05",
+    "module": "RailgunPlanner",
+    "requires": [
+      "RULE:energy_stops_at_endpoint",
+      "FIXTURE:collinear_targets_in_range_and_clear"
+    ],
+    "input": {
+      "energy": 30,
+      "ordered_hp": [
+        5,
+        10,
+        100
+      ]
+    },
+    "expected": {
+      "choice": "endpoint_at_or_beyond_third_robot",
+      "damage_by_target": [
+        5,
+        10,
+        15
+      ],
+      "total_damage": 30,
+      "first_endpoint_damage": 5
+    },
+    "negative": {
+      "change": "third_target_out_of_range",
+      "must_not_force": "out_of_range_endpoint"
+    }
+  },
+  {
+    "id": "S06",
+    "module": "RocketPlanner",
+    "requires": [
+      "RULE:splash_damage_10",
+      "FIXTURE:all_candidate_centers_in_range",
+      "FIXTURE:no_other_targets"
+    ],
+    "input": {
+      "level": 1,
+      "cooldown": 0,
+      "robots": [
+        {
+          "pos": [
+            10,
+            10
+          ],
+          "hp": 10,
+          "score": 2
+        },
+        {
+          "pos": [
+            12,
+            10
+          ],
+          "hp": 10,
+          "score": 2
+        }
+      ]
+    },
+    "expected": {
+      "required_candidate": [
+        11,
+        10
+      ],
+      "canonical_target": [
+        11,
+        10
+      ],
+      "damage_by_target": [
+        10,
+        10
+      ],
+      "kill_score": 4,
+      "robot_center_kill_score": 2
+    },
+    "negative": {
+      "change": "cooldown_positive",
+      "must_not_force": "rocket_attack"
+    }
+  },
+  {
+    "id": "S07",
+    "module": "RoleActionScheduler",
+    "requires": [
+      "FIXTURE:item_use_has_positive_value",
+      "FIXTURE:other_two_shots_needed",
+      "FIXTURE:item_use_legal"
+    ],
+    "input": {
+      "rocket_cooldown": 2,
+      "item_holder": "rocket_controller",
+      "item": "DizzyWeapon",
+      "gatling_ready": true,
+      "railgun_ready": true
+    },
+    "expected": {
+      "item_user": "rocket_controller",
+      "preserved_weapon_attacks": 2,
+      "rocket_attacks": 0,
+      "max_actions_per_controller": 1
+    },
+    "negative": {
+      "change": "item_missing_from_rocket_controller_backpack",
+      "must_not_force": "rocket_controller_use_item"
+    }
+  },
+  {
+    "id": "S08",
+    "module": "EmergencyPlanner",
+    "requires": [
+      "VERIFIED:stun_covers_next_four_enemy_action_rounds",
+      "RULE:robots_cleared_next_morning",
+      "FIXTURE:no_other_threats"
+    ],
+    "input": {
+      "rounds_until_clear": 4,
+      "boss_count": 3,
+      "hp_each": 800,
+      "all_in_one_3x3": true,
+      "bomb_damage_each": 100
+    },
+    "expected": {
+      "choice": "use_DizzyWeapon",
+      "covered_robots": 3,
+      "uncontrolled_threat_rounds": 0,
+      "kill_score_from_clear": 0
+    },
+    "negative": {
+      "change": "stun_leaves_one_lethal_enemy_action_before_clear",
+      "must_not_force": "assume_stun_alone_safe"
+    }
+  },
+  {
+    "id": "S09",
+    "module": "RepairScheduler",
+    "requires": [
+      "VERIFIED:repair_before_next_damage_event",
+      "FIXTURE:incoming_damage_upper_bound_stable",
+      "FIXTURE:repairer_ready"
+    ],
+    "input": {
+      "hp": 650,
+      "max_hp": 2000,
+      "damage_per_round": 120,
+      "safe_rounds_before_repair": 4,
+      "wall_fixer_gold_cost": 10
+    },
+    "expected": {
+      "hp_before_repair": 170,
+      "healed_hp": 1830,
+      "hp_after_repair_and_next_hit": 1880,
+      "unrepaired_raw_hp_after_six_hits": -70
+    },
+    "negative": {
+      "change": "damage_per_round_increases_to_400",
+      "must_not_force": "wait_four_rounds"
+    }
+  },
+  {
+    "id": "S10",
+    "module": "UpgradePlanner",
+    "requires": [
+      "FIXTURE:equal_cost_and_non_damage_value",
+      "FIXTURE:no_overkill",
+      "VERIFIED:rocket_cycle_four_rounds_for_B"
+    ],
+    "input": {
+      "A": {
+        "railgun_extra_effective_damage_per_round": 10,
+        "gatling_extra_effective_damage_per_round": 0
+      },
+      "B": {
+        "rocket_extra_center_damage": 20,
+        "adjacent_targets": 5,
+        "splash_damage": 10,
+        "cycle_rounds": 4,
+        "railgun_extra_effective_damage_per_round": 10
+      }
+    },
+    "expected": {
+      "A_choice": "upgrade_railgun",
+      "B_choice": "upgrade_rocket",
+      "B_extra_damage_per_shot": 70,
+      "B_extra_damage_per_round": 17.5
+    },
+    "negative": {
+      "change": "remaining_window_has_no_rocket_firing_opportunity",
+      "must_not_force": "upgrade_rocket_for_average_damage"
+    }
+  },
+  {
+    "id": "S11",
+    "module": "EconomyEngine",
+    "requires": [
+      "FIXTURE:purchase_required_for_safety",
+      "FIXTURE:tomorrow_price_certain",
+      "FIXTURE:route_and_inventory_valid"
+    ],
+    "input": {
+      "gold": 90,
+      "iron_inventory": 10,
+      "price_now": 5,
+      "price_tomorrow": 10,
+      "required_purchase_cost": 100
+    },
+    "expected": {
+      "sell_quantity": 2,
+      "iron_remaining": 8,
+      "gold_after_sell": 100,
+      "gold_after_buy": 0,
+      "foregone_appreciation": 10
+    },
+    "negative": {
+      "change": "required_purchase_no_longer_needed_and_holding_has_no_cost",
+      "must_not_force": "sell_two_iron_now"
+    }
+  },
+  {
+    "id": "S12",
+    "module": "EndgamePlanner",
+    "requires": [
+      "FIXTURE:all_incoming_damage_bounded",
+      "FIXTURE:roles_and_weapons_safe",
+      "FIXTURE:no_other_score_for_healing"
+    ],
+    "input": {
+      "station_hp": 1000,
+      "remaining_rounds": 8,
+      "damage_bound_per_round": 80,
+      "shot_damage": 10,
+      "A": {
+        "large_hp": 500,
+        "middle_hp": 10
+      },
+      "B": {
+        "boss_hp": 10,
+        "middle_hp": 60
+      }
+    },
+    "expected": {
+      "station_hp_lower_bound": 360,
+      "A_target": "middleRobot",
+      "A_kill_score": 2,
+      "B_target": "bossRobot",
+      "B_kill_score": 10,
+      "require_heal": false
+    },
+    "negative": {
+      "change": "damage_bound_per_round_becomes_150",
+      "must_not_force": "ignore_station_safety"
+    }
+  },
+  {
+    "id": "S13",
+    "module": "OffensePlanner",
+    "requires": [
+      "FIXTURE:summon_certainly_killed_without_other_effect",
+      "FIXTURE:no_positive_combo"
+    ],
+    "input": {
+      "day": 10,
+      "gold": 100,
+      "summon_cost": 100,
+      "our_score_gain": 0,
+      "enemy_score_gain": 4
+    },
+    "expected": {
+      "choice": "do_not_summon",
+      "score_margin_if_summon": -4,
+      "cash_may_remain": true
+    },
+    "negative": {
+      "change": "verified_summon_changes_enemy_base_survival",
+      "must_not_force": "always_reject_summon"
+    }
+  },
+  {
+    "id": "S14",
+    "module": "RoleAssignmentAndPathfinder",
+    "requires": [
+      "FIXTURE:no_inventory_binding",
+      "FIXTURE:short_routes_conflict_free"
+    ],
+    "input": {
+      "roles": [
+        "worker1",
+        "worker2",
+        "pioneer"
+      ],
+      "weapons": [
+        "gatling",
+        "railgun",
+        "rocket"
+      ],
+      "distance_matrix": [
+        [
+          12,
+          2,
+          8
+        ],
+        [
+          2,
+          12,
+          8
+        ],
+        [
+          8,
+          8,
+          2
+        ]
+      ]
+    },
+    "expected": {
+      "assignment_column_indices": [
+        1,
+        0,
+        2
+      ],
+      "permutations_evaluated": 6,
+      "makespan": 2,
+      "total_distance": 6,
+      "baseline_makespan": 12,
+      "baseline_distance": 26,
+      "vertex_conflicts": 0,
+      "swap_conflicts": 0
+    },
+    "negative": {
+      "change": "chosen_routes_contend_for_same_cell_same_round",
+      "must_not_force": "execute_conflicting_moves"
+    }
+  },
+  {
+    "id": "S15",
+    "module": "StrategyFSM",
+    "requires": [
+      "VERIFIED:night_task_actions_work",
+      "FIXTURE:two_guns_safe_for_remaining_night",
+      "FIXTURE:taskpoint_safe",
+      "FIXTURE:third_gun_marginal_value_zero"
+    ],
+    "input": {
+      "phase": "night",
+      "score_reward": 20,
+      "timeout_rounds": 30,
+      "full_completion_elapsed": 3,
+      "third_gun_marginal_score": 0
+    },
+    "expected": {
+      "choice": "pioneer_continues_task",
+      "task_score_on_full_branch": 70,
+      "defending_controllers": 2,
+      "pioneer_simultaneous_attack_and_submit": false
+    },
+    "negative": {
+      "change": "third_gun_required_to_prevent_base_destruction",
+      "must_not_force": "continue_task_at_cost_of_base"
+    }
+  }
+]

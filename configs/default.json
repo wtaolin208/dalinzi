@@ -32,7 +32,7 @@
     ],
     "submitFirst": true,
     "parallelTask": true,
-    "fixedStations": true,
+    "fixedStations": false,
     "enableOffense": false,
     "offenseGoldReserve": 100,
     "taskMinExpectedDensity": 0,

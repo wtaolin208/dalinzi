@@ -47,6 +47,7 @@ func defense(ctx context.Context, r p.Request, g nav.Grid, c Config) ([]Pair, []
 		return nil, nil
 	}
 	bestCost := int(^uint(0) >> 1)
+	bestTotal := int(^uint(0) >> 1)
 	bestFire := -1.0
 	potential := map[int]float64{}
 	if !r.Daylight() && n < len(ws) {
@@ -103,13 +104,24 @@ func defense(ctx context.Context, r p.Request, g nav.Grid, c Config) ([]Pair, []
 		cost := res.Cost
 		if cost < 0 {
 			cost = 100000
+			distances := []int{}
 			for i := range roles {
 				d := g.Distances(gs[i])
 				v := d[start[i]]
 				if v < 0 {
 					v = 10000
 				}
-				cost += v
+				distances = append(distances, v)
+			}
+			lower, _ := assignmentRank(distances)
+			cost += lower
+		}
+		total := 0
+		for step := 1; step < len(res.Path); step++ {
+			for i := range roles {
+				if res.Path[step][i] != res.Path[step-1][i] {
+					total++
+				}
 			}
 		}
 		fire := 0.0
@@ -118,9 +130,10 @@ func defense(ctx context.Context, r p.Request, g nav.Grid, c Config) ([]Pair, []
 				fire += potential[pair.Weapon.ID]
 			}
 		}
-		if fire > bestFire || fire == bestFire && cost < bestCost {
+		if fire > bestFire || fire == bestFire && (cost < bestCost || cost == bestCost && total < bestTotal) {
 			bestFire = fire
 			bestCost = cost
+			bestTotal = total
 			best = append([]Pair(nil), chosen...)
 		}
 	}

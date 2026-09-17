@@ -242,6 +242,12 @@ func fight(r p.Request, pairs []Pair, c Config, m Memory, out *p.Response, tr *T
 	initial := make([]int, len(r.Robots.Roles))
 	copy(initial, tr.ItemDamage)
 	beam := []option{{map[string]p.Command{}, initial, damageValue(r, initial)}}
+	combinations := 1
+	for range pairs {
+		combinations *= c.CombatCandidates + 1
+	}
+	exact := combinations <= 4096
+	tr.CombatExact = exact
 	for _, pair := range pairs {
 		w, u := pair.Weapon, pair.Role
 		if p.Distance(w.Pos, u.Pos) > 1 {
@@ -271,7 +277,7 @@ func fight(r p.Request, pairs []Pair, c Config, m Memory, out *p.Response, tr *T
 			}
 		}
 		sort.SliceStable(next, func(i, j int) bool { return next[i].value > next[j].value })
-		if len(next) > c.CombatBeam {
+		if !exact && len(next) > c.CombatBeam {
 			next = next[:c.CombatBeam]
 		}
 		beam = next

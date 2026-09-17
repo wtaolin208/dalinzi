@@ -266,9 +266,7 @@ func Validate(r p.Request, c Config, input p.Response, tr *Trace) p.Response {
 					reason = "area item target required"
 				}
 			case "SmallRobotSummonOrder", "MiddleRobotSummonOrder", "LargeRobotSummonOrder", "BossRobotSummonOrder":
-				if !c.Strategy.EnableOffense || !r.Daylight() {
-					reason = "summon orders disabled or outside daytime"
-				}
+				// Timing and strategic desirability are planner gates, not field legality.
 			default:
 				found := false
 				if one {

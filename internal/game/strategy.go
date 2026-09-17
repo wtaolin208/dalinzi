@@ -112,6 +112,13 @@ func returnDistance(r p.Request, g nav.Grid, pos p.Pos) int {
 }
 
 func roleReturnDistance(r p.Request, g nav.Grid, c Config, u p.Role, pos p.Pos) int {
+	if w, ok := c.ReturnAssignments[u.ID]; ok {
+		path := g.Shortest(g.ID(pos), g.Around(w.Cells()))
+		if len(path) == 0 {
+			return 10000
+		}
+		return len(path) - 1
+	}
 	if c.Strategy.FixedStations {
 		kind := "rocket"
 		worker := 0
@@ -164,12 +171,9 @@ func assessTask(r p.Request, g nav.Grid, c Config, m Memory, site p.PlayerTask, 
 			a.CooldownWait = min(a.CooldownWait, max(0, other.Cooldown-travel-int(math.Ceil(d))-(len(path)-1)))
 		}
 	}
-	bonus := 0.0
-	if timeout > 0 {
-		bonus = 5 * float64(timeout) / d
-	}
 	// Partial correctness is not exposed numerically: use a documented 25% prior.
-	a.ExpectedScore = prob*(float64(site.Score)+bonus) + (1-prob)*float64(site.Score)*.25
+	a.ExpectedScore = prob*fullTaskScore(site.Score, timeout, d) + (1-prob)*float64(site.Score)*.25
+
 	goldWeight := .1
 	if r.Our.Gold < c.ReserveGold {
 		goldWeight = .5

@@ -9,6 +9,7 @@ func TestFixedStationsAndDeathReassignment(t *testing.T) {
 	r := small()
 	r.Our.Roles = []p.Role{{ID: 1, Type: "worker", Health: 220, Pos: p.Pos{X: 1, Y: 1}}, {ID: 2, Type: "worker", Health: 220, Pos: p.Pos{X: 2, Y: 1}}, {ID: 3, Type: "pioneer", Health: 200, Pos: p.Pos{X: 3, Y: 1}}, {ID: 11, Type: "rocket", Health: 1000, Level: 1, Pos: p.Pos{X: 5, Y: 3}}, {ID: 12, Type: "gatling", Health: 1000, Level: 1, Pos: p.Pos{X: 4, Y: 4}}, {ID: 13, Type: "railgun", Health: 1000, Level: 1, Pos: p.Pos{X: 2, Y: 4}}}
 	c := DefaultConfig()
+	c.Strategy.FixedStations = true // Explicit compatibility mode.
 	pairs, _ := defense(t.Context(), r, staticGrid(r), c)
 	want := map[int]string{1: "gatling", 2: "railgun", 3: "rocket"}
 	if len(pairs) != 3 {
